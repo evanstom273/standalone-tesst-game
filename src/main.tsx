@@ -1,125 +1,34 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createRoot } from 'react-dom/client'
+import { annularSectorPath, CX, CY, DOUBLE_INNER, DOUBLE_OUTER, INNER_BULL, OUTER_BULL, polarPoint, scorePoint, SECTORS, TREBLE_INNER, TREBLE_OUTER } from './game/dartboardGeometry'
+import { finalImpact, scanPosition, type SkillProfile, type ThrowPhase, type ThrowResult } from './game/throwMechanic'
+import { simulateAiThrow, type AiProfile } from './game/aiThrowing'
+import { initialMatch, scoreVisit, type MatchState, type RecordedDart, type Side } from './game/matchState'
+import type { BoardPoint, ScoringRegion } from './game/dartboardGeometry'
 import './styles.css'
 
-const SECTORS = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5]
-const QUICK_SCORES = [60, 57, 54, 51, 50, 48]
-const CX = 300
-const CY = 300
-const BOARD_RADIUS = 273
-const DOUBLE_INNER = 227
-const DOUBLE_OUTER = 247
-const TREBLE_INNER = 148
-const TREBLE_OUTER = 168
-const OUTER_BULL = 49
-const INNER_BULL = 19
+const PLAYER_SKILL: SkillProfile = { scanSpeed: 1.45, wobble: 7, accuracy: .74, variance: 35 }
+const AI_SKILL: AiProfile = { name: 'AI OPPONENT', scanSpeed: 1.1, wobble: 5, accuracy: .82, variance: 27 }
+type Phase = ThrowPhase | 'ai-vertical' | 'ai-horizontal' | 'ai-accuracy'
+type Marker = { point: BoardPoint; side: Side; region: ScoringRegion }
+const actionLabel: Record<Phase, string> = { vertical: 'LOCK VERTICAL AIM', horizontal: 'LOCK HORIZONTAL AIM', accuracy: 'LOCK THROW ACCURACY', resolving: 'DART IN FLIGHT', result: 'RESULT', 'ai-vertical': 'AI VERTICAL AIM', 'ai-horizontal': 'AI HORIZONTAL AIM', 'ai-accuracy': 'AI EXECUTING' }
+const pointForProgress = (progress: number, axis: 'x' | 'y') => axis === 'x' ? CX - 245 + progress * 490 : CY - 245 + progress * 490
 
-type ScoringRegion = { label: string; score: number; multiplier: number }
-
-const polarPoint = (radius: number, angle: number) => {
-  const radians = (angle * Math.PI) / 180
-  return { x: CX + radius * Math.sin(radians), y: CY - radius * Math.cos(radians) }
+function Dartboard({ phase, elapsed, lockedX, lockedY, accuracy, markers, onAction }: { phase: Phase; elapsed: number; lockedX: number | null; lockedY: number | null; accuracy: number; markers: Marker[]; onAction: () => void }) {
+  const scanX = pointForProgress(scanPosition(elapsed, AI_SKILL, 'x'), 'x'); const scanY = pointForProgress(scanPosition(elapsed, AI_SKILL, 'y'), 'y'); const targetX = lockedX ?? scanX; const targetY = lockedY ?? scanY; const accuracyPosition = phase === 'accuracy' || phase === 'ai-accuracy' ? (Math.sin(elapsed * 1.7) + 1) / 2 : accuracy
+  const handlePointer = (event: React.PointerEvent<SVGSVGElement>) => { event.currentTarget.setPointerCapture?.(event.pointerId); onAction() }
+  return <section className="board-stage" aria-label="Interactive dartboard"><div className="board-shadow" /><div className="dartboard-wrap"><svg className="dartboard-svg" viewBox="0 0 600 600" role="img" aria-label="20-sector dartboard" onPointerDown={handlePointer}><circle cx={CX} cy={CY} r={273} className="board-surround" /><circle cx={CX} cy={CY} r={DOUBLE_OUTER} className="board-face" />{SECTORS.map((value, index) => { const centre = index * 18; const start = centre - 9; const end = centre + 9; const dark = index % 2 === 1; return <g key={value}><path d={annularSectorPath(OUTER_BULL, TREBLE_INNER, start, end)} className={dark ? 'single-dark' : 'single-light'} /><path d={annularSectorPath(TREBLE_INNER, TREBLE_OUTER, start, end)} className={dark ? 'ring-green' : 'ring-red'} /><path d={annularSectorPath(TREBLE_OUTER, DOUBLE_INNER, start, end)} className={dark ? 'single-dark' : 'single-light'} /><path d={annularSectorPath(DOUBLE_INNER, DOUBLE_OUTER, start, end)} className={dark ? 'ring-green' : 'ring-red'} /><line x1={CX} y1={CY - OUTER_BULL} x2={CX} y2={CY - DOUBLE_OUTER} className="sector-wire" transform={'rotate(' + start + ' ' + CX + ' ' + CY + ')'} /><text x={polarPoint(262, centre).x} y={polarPoint(262, centre).y} className="board-number" textAnchor="middle" dominantBaseline="middle">{value}</text></g> })}<circle cx={CX} cy={CY} r={OUTER_BULL} className="outer-bull" /><circle cx={CX} cy={CY} r={INNER_BULL} className="inner-bull" />{[DOUBLE_INNER, DOUBLE_OUTER, TREBLE_INNER, TREBLE_OUTER].map((radius) => <circle key={radius} cx={CX} cy={CY} r={radius} className="ring-wire" />)}{(phase === 'vertical' || phase === 'ai-vertical') && <line x1={CX - 245} x2={CX + 245} y1={scanY} y2={scanY} className="aim-line scanning" />}{(phase === 'horizontal' || phase === 'ai-horizontal') && <><line y1={CY - 245} y2={CY + 245} x1={scanX} x2={scanX} className="aim-line scanning" /><line x1={CX - 245} x2={CX + 245} y1={lockedY ?? scanY} y2={lockedY ?? scanY} className="aim-line locked" /></>}{(phase === 'accuracy' || phase === 'ai-accuracy') && <><line y1={CY - 245} y2={CY + 245} x1={lockedX ?? scanX} x2={lockedX ?? scanX} className="aim-line locked" /><line x1={CX - 245} x2={CX + 245} y1={lockedY ?? scanY} y2={lockedY ?? scanY} className="aim-line locked" /><circle cx={targetX} cy={targetY} r="11" className="aim-target" /></>}{markers.map((marker, index) => <g key={marker.side + index} className={marker.side === 'ai' ? 'dart-marker ai' : 'dart-marker'}><circle cx={marker.point.x} cy={marker.point.y} r="7" /><line x1={marker.point.x - 5} y1={marker.point.y - 5} x2={marker.point.x + 5} y2={marker.point.y + 5} /><line x1={marker.point.x + 5} y1={marker.point.y - 5} x2={marker.point.x - 5} y2={marker.point.y + 5} /></g>)}</svg><div className="board-caption"><span>WINMAU</span><small>PROFESSIONAL</small></div></div><div className="throw-result"><span>{actionLabel[phase]}</span><b>{phase === 'accuracy' ? Math.round(accuracyPosition * 100) + '% POWER' : phase.startsWith('ai-') ? 'AI TURN' : 'SPACE / ENTER / TAP'}</b></div>{(phase === 'accuracy' || phase === 'ai-accuracy') && <button className="accuracy-meter" onPointerDown={(event) => { event.stopPropagation(); onAction() }} aria-label="Lock throw accuracy"><span className="accuracy-track"><i style={{ left: accuracyPosition * 100 + '%' }} /></span><small>RED = WIDE MISS</small><small>GREEN = CLEAN THROW</small></button>}</section>
 }
 
-const annularSectorPath = (innerRadius: number, outerRadius: number, startAngle: number, endAngle: number) => {
-  const outerStart = polarPoint(outerRadius, startAngle)
-  const outerEnd = polarPoint(outerRadius, endAngle)
-  const innerEnd = polarPoint(innerRadius, endAngle)
-  const innerStart = polarPoint(innerRadius, startAngle)
-  return [
-    `M ${outerStart.x} ${outerStart.y}`,
-    `A ${outerRadius} ${outerRadius} 0 0 1 ${outerEnd.x} ${outerEnd.y}`,
-    `L ${innerEnd.x} ${innerEnd.y}`,
-    `A ${innerRadius} ${innerRadius} 0 0 0 ${innerStart.x} ${innerStart.y}`,
-    'Z',
-  ].join(' ')
-}
-
-const resolveRegion = (clientX: number, clientY: number, rect: DOMRect): ScoringRegion => {
-  const scale = 600 / Math.min(rect.width, rect.height)
-  const x = (clientX - rect.left - rect.width / 2) * scale + CX
-  const y = (clientY - rect.top - rect.height / 2) * scale + CY
-  const dx = x - CX
-  const dy = y - CY
-  const radius = Math.sqrt(dx * dx + dy * dy)
-  const angle = (Math.atan2(dx, -dy) * 180) / Math.PI
-  const clockwiseAngle = (angle + 360) % 360
-  const sectorIndex = Math.floor((clockwiseAngle + 9) / 18) % 20
-  const value = SECTORS[sectorIndex]
-
-  if (radius <= INNER_BULL) return { label: 'INNER BULL', score: 50, multiplier: 1 }
-  if (radius <= OUTER_BULL) return { label: 'OUTER BULL', score: 25, multiplier: 1 }
-  if (radius <= TREBLE_INNER) return { label: `SINGLE ${value}`, score: value, multiplier: 1 }
-  if (radius <= TREBLE_OUTER) return { label: `TREBLE ${value}`, score: value * 3, multiplier: 3 }
-  if (radius <= DOUBLE_INNER) return { label: `SINGLE ${value}`, score: value, multiplier: 1 }
-  if (radius <= DOUBLE_OUTER) return { label: `DOUBLE ${value}`, score: value * 2, multiplier: 2 }
-  return { label: 'MISS', score: 0, multiplier: 0 }
-}
-
-function Dartboard() {
-  const [lastThrow, setLastThrow] = useState<ScoringRegion>({ label: 'READY TO THROW', score: 0, multiplier: 0 })
-
-  const handlePointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
-    setLastThrow(resolveRegion(event.clientX, event.clientY, event.currentTarget.getBoundingClientRect()))
-  }
-
-  return (
-    <section className="board-stage" aria-label="Interactive dartboard">
-      <div className="board-shadow" />
-      <div className="dartboard-wrap">
-        <svg className="dartboard-svg" viewBox="0 0 600 600" role="img" aria-label="20-sector dartboard" onPointerDown={handlePointerDown}>
-          <circle cx={CX} cy={CY} r={BOARD_RADIUS} className="board-surround" />
-          <circle cx={CX} cy={CY} r={DOUBLE_OUTER} className="board-face" />
-          {SECTORS.map((value, index) => {
-            const centreAngle = index * 18
-            const startAngle = centreAngle - 9
-            const endAngle = centreAngle + 9
-            const dark = index % 2 === 1
-            return (
-              <g key={value}>
-                <path d={annularSectorPath(OUTER_BULL, TREBLE_INNER, startAngle, endAngle)} className={dark ? 'single-dark' : 'single-light'} />
-                <path d={annularSectorPath(TREBLE_INNER, TREBLE_OUTER, startAngle, endAngle)} className={dark ? 'ring-green' : 'ring-red'} />
-                <path d={annularSectorPath(TREBLE_OUTER, DOUBLE_INNER, startAngle, endAngle)} className={dark ? 'single-dark' : 'single-light'} />
-                <path d={annularSectorPath(DOUBLE_INNER, DOUBLE_OUTER, startAngle, endAngle)} className={dark ? 'ring-green' : 'ring-red'} />
-                <line x1={CX} y1={CY - OUTER_BULL} x2={CX} y2={CY - DOUBLE_OUTER} className="sector-wire" transform={`rotate(${startAngle} ${CX} ${CY})`} />
-                <text x={polarPoint(262, centreAngle).x} y={polarPoint(262, centreAngle).y} className="board-number" textAnchor="middle" dominantBaseline="middle">{value}</text>
-              </g>
-            )
-          })}
-          <circle cx={CX} cy={CY} r={OUTER_BULL} className="outer-bull" />
-          <circle cx={CX} cy={CY} r={INNER_BULL} className="inner-bull" />
-          <circle cx={CX} cy={CY} r={DOUBLE_INNER} className="ring-wire" />
-          <circle cx={CX} cy={CY} r={DOUBLE_OUTER} className="ring-wire" />
-          <circle cx={CX} cy={CY} r={TREBLE_INNER} className="ring-wire" />
-          <circle cx={CX} cy={CY} r={TREBLE_OUTER} className="ring-wire" />
-        </svg>
-        <div className="board-caption"><span>WINMAU</span><small>PROFESSIONAL</small></div>
-      </div>
-      <div className="throw-result" aria-live="polite"><span>LAST THROW</span><b>{lastThrow.label}</b>{lastThrow.score > 0 && <em>{lastThrow.score}</em>}</div>
-    </section>
-  )
-}
-
-function Scoreboard() {
-  const [active, setActive] = useState(0)
-  const [legs, setLegs] = useState([2, 1])
-  const [scores, setScores] = useState([301, 347])
-  const addScore = (points: number) => { setScores((current) => current.map((score, index) => index === active ? Math.max(0, score - points) : score)); setActive((current) => (current + 1) % 2) }
-
-  return (
-    <section className="scoreboard-shell" aria-label="Match scoreboard">
-      <div className="scoreboard-topline"><span className="live-dot" /> LIVE MATCH <span className="topline-divider" /> ROUND 1 · FIRST TO 3</div>
-      <div className="players-header"><span>PLAYER</span><span>LEGS</span><span>REMAINING</span></div>
-      <button className={`player-row ${active === 0 ? 'is-active' : ''}`} onClick={() => setActive(0)}><span className="player-name"><i /> ANDERSON <em>🏴</em></span><strong>{legs[0]}</strong><b>{scores[0]}</b></button>
-      <button className={`player-row ${active === 1 ? 'is-active' : ''}`} onClick={() => setActive(1)}><span className="player-name">ZONNEVELD <em>🇳🇱</em></span><strong>{legs[1]}</strong><b>{scores[1]}</b></button>
-      <div className="scoreboard-footer"><span>2026 WINMAU WORLD MASTERS</span><span className="sets">SETS <b>0</b> <i /> LEGS <b>{legs[0] + legs[1]}</b></span></div>
-      <div className="checkout-panel"><div className="checkout-heading"><span>QUICK SCORE</span><small>TURN: {active === 0 ? 'ANDERSON' : 'ZONNEVELD'}</small></div><div className="quick-score-grid">{QUICK_SCORES.map((score) => <button key={score} onClick={() => addScore(score)}>{score}</button>)}</div><div className="checkout-row"><span>CHECKOUT</span><b>{scores[active] <= 170 ? scores[active] : '—'}</b><button onClick={() => setLegs((current) => current.map((leg, index) => index === active ? leg + 1 : leg))}>WIN LEG</button></div></div>
-    </section>
-  )
-}
+function Scoreboard({ match, phase, currentVisit }: { match: MatchState; phase: Phase; currentVisit: RecordedDart[] }) { const visitTotal = currentVisit.reduce((sum, dart) => sum + dart.region.score, 0); const row = (side: Side, label: string, score: number) => <div className={'player-row ' + (match.activeSide === side ? 'is-active' : '')}><span className="player-name"><i />{label}</span><strong>{match.activeSide === side ? visitTotal : 0}</strong><b>{score}</b></div>; return <section className="scoreboard-shell" aria-label="Match scoreboard"><div className="scoreboard-topline"><span className="live-dot" /> LIVE MATCH <span className="topline-divider" /> {actionLabel[phase]}</div><div className="players-header"><span>PLAYER</span><span>VISIT</span><span>REMAINING</span></div>{row('player', 'PLAYER', match.playerScore)}{row('ai', 'AI OPPONENT', match.aiScore)}<div className="scoreboard-footer"><span>{currentVisit.length} / 3 DARTS · {match.message}</span><span className="sets">LAST VISIT <b>{match.lastVisitTotal}</b></span></div><div className="checkout-panel"><div className="checkout-heading"><span>{match.activeSide === 'player' ? 'YOUR TURN' : 'AI TURN'}</span><small>{match.activeSide === 'player' ? 'TAP / SPACE TO AIM' : 'SIMULATING THROW'}</small></div><div className="checkout-row"><span>CHECKOUT</span><b>{(match.activeSide === 'player' ? match.playerScore : match.aiScore) <= 170 ? (match.activeSide === 'player' ? match.playerScore : match.aiScore) : '—'}</b><span>{currentVisit.length} DARTS</span></div></div></section> }
 
 function App() {
-  return <main className="app-shell"><header className="app-header"><div className="brand-mark"><span>501</span><small>DARTS</small></div><div><p className="event-kicker">PROFESSIONAL DARTS CORPORATION</p><h1>THE BIG STAGE</h1></div><div className="match-meta"><span className="live-pill">● LIVE</span><span>LEG 4 · 01:42</span></div></header><div className="game-layout"><Scoreboard /><Dartboard /></div><footer className="app-footer"><span>STANDALONE TEST GAME</span><span>BEST OF 5 LEGS <i /> DOUBLE OUT</span></footer></main>
+  const [phase, setPhase] = useState<Phase>('vertical'); const [elapsed, setElapsed] = useState(0); const [lockedX, setLockedX] = useState<number | null>(null); const [lockedY, setLockedY] = useState<number | null>(null); const [accuracy, setAccuracy] = useState(.5); const [markers, setMarkers] = useState<Marker[]>([]); const [match, setMatch] = useState(initialMatch); const [currentVisit, setCurrentVisit] = useState<RecordedDart[]>([]); const skill = useMemo(() => PLAYER_SKILL, [])
+  useEffect(() => { let frame = 0; const start = performance.now(); const tick = (now: number) => { setElapsed((now - start) / 1000); frame = requestAnimationFrame(tick) }; frame = requestAnimationFrame(tick); return () => cancelAnimationFrame(frame) }, [])
+  useEffect(() => { const onKey = (event: KeyboardEvent) => { if (event.code === 'Space' || event.code === 'Enter') { event.preventDefault(); handleAction() } }; window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey) })
+  useEffect(() => { if (!phase.startsWith('ai-')) return; const timer = window.setTimeout(() => { if (phase === 'ai-vertical') setPhase('ai-horizontal'); else if (phase === 'ai-horizontal') setPhase('ai-accuracy'); else { const simulated = simulateAiThrow(match.aiScore, AI_SKILL, performance.now() / 1000); const dart = { result: simulated.result, region: simulated.region }; setMarkers((current) => [...current, { point: simulated.result.finalPoint, side: 'ai', region: simulated.region }]); setCurrentVisit((current) => { const next = [...current, dart]; if (next.length === 3) { setMatch((state) => scoreVisit(state, 'ai', next)); setPhase('vertical'); return [] } setPhase('ai-vertical'); return next }) } }, phase === 'ai-accuracy' ? 900 : 650); return () => window.clearTimeout(timer) }, [phase, match.aiScore])
+  function finishPlayerDart(result: ThrowResult) { const dart = { result, region: scorePoint(result.finalPoint) }; const isVisitComplete = currentVisit.length + 1 === 3; setMarkers((current) => [...current, { point: result.finalPoint, side: 'player', region: dart.region }]); setCurrentVisit((current) => { const next = [...current, dart]; if (next.length === 3) { setMatch((state) => scoreVisit(state, 'player', next)); return [] } return next }); if (isVisitComplete) setPhase('ai-vertical'); else { setPhase('result'); window.setTimeout(() => setPhase((current) => current === 'result' ? 'vertical' : current), 700) } }
+  function handleAction() { if (phase === 'vertical') { setLockedY(300 - 245 + scanPosition(elapsed, skill, 'y') * 490); setPhase('horizontal') } else if (phase === 'horizontal') { setLockedX(300 - 245 + scanPosition(elapsed, skill, 'x') * 490); setPhase('accuracy') } else if (phase === 'accuracy' && lockedX !== null && lockedY !== null) { const lockedAccuracy = (Math.sin(elapsed * 1.7) + 1) / 2; setAccuracy(lockedAccuracy); setPhase('resolving'); const result = finalImpact({ x: lockedX, y: lockedY }, lockedAccuracy, skill, elapsed); window.setTimeout(() => finishPlayerDart(result), 300) } }
+  return <main className="app-shell"><header className="app-header"><div className="brand-mark"><span>501</span><small>DARTS</small></div><div><p className="event-kicker">PROFESSIONAL DARTS CORPORATION</p><h1>THE BIG STAGE</h1></div><div className="match-meta"><span className="live-pill">● LIVE</span><span>501 · FIRST TO 3</span></div></header><div className="game-layout"><Scoreboard match={match} phase={phase} currentVisit={currentVisit} /><Dartboard phase={phase} elapsed={elapsed} lockedX={lockedX} lockedY={lockedY} accuracy={accuracy} markers={markers} onAction={handleAction} /></div><footer className="app-footer"><span>STANDALONE TEST GAME</span><span>THREE DART VISIT <i /> DOUBLE OUT</span></footer></main>
 }
-
 createRoot(document.getElementById('root')!).render(<App />)
