@@ -1,34 +1,24 @@
-:root {
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #f3f4f6;
-  background: #10131a;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-}
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
+:root { font-family: 'Space Grotesk', sans-serif; color: #f5f5fa; background: #090a12; font-synthesis: none; text-rendering: optimizeLegibility; }
 * { box-sizing: border-box; }
-
 body { margin: 0; min-width: 320px; min-height: 100vh; }
-
-.app-shell {
-  display: grid;
-  min-height: 100vh;
-  place-items: center;
-  padding: 24px;
-  background: radial-gradient(circle at top right, #26385b 0, transparent 42%), #10131a;
-}
-
-.welcome-card {
-  width: min(100%, 620px);
-  padding: clamp(32px, 8vw, 72px);
-  border: 1px solid #33415e;
-  border-radius: 28px;
-  background: rgba(22, 28, 41, 0.88);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.32);
-}
-
-.eyebrow { color: #8daaf7; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; }
-h1 { margin: 18px 0; max-width: 11ch; font-size: clamp(2.5rem, 8vw, 4.7rem); line-height: 0.98; letter-spacing: -0.06em; }
-p { max-width: 48ch; color: #aab4c8; font-size: 1.08rem; line-height: 1.65; }
-.status-pill { display: inline-flex; align-items: center; gap: 10px; margin-top: 24px; padding: 10px 14px; border: 1px solid #35425d; border-radius: 999px; color: #d9e1f2; font-size: 0.9rem; }
-.status-dot { width: 8px; height: 8px; border-radius: 50%; background: #62e6a4; box-shadow: 0 0 14px #62e6a4; }
+button { font: inherit; }
+.app-shell { min-height: 100vh; padding: 30px clamp(18px, 5vw, 82px) 22px; overflow: hidden; background: radial-gradient(circle at 82% 46%, #20265b 0, #0e1021 31%, #090a12 68%); }
+.app-header, .app-footer { display: flex; align-items: center; justify-content: space-between; max-width: 1500px; margin: auto; }
+.app-header { gap: 28px; border-bottom: 1px solid #2c3151; padding-bottom: 22px; }
+.brand-mark { display: flex; align-items: baseline; gap: 7px; color: #e9e9f2; font-family: 'Barlow Condensed'; font-style: italic; font-weight: 900; letter-spacing: -0.1em; }.brand-mark span { font-size: 2.5rem; color: #f04465; }.brand-mark small { color: #8287ba; font: 700 .7rem 'Space Grotesk'; letter-spacing: .12em; }
+.event-kicker { margin: 0 0 3px; color: #7f84bd; font-size: .66rem; font-weight: 700; letter-spacing: .22em; }.app-header h1 { margin: 0; font: 800 clamp(1.5rem, 3vw, 2.8rem)/.9 'Barlow Condensed'; letter-spacing: .06em; }
+.match-meta { display: flex; align-items: center; gap: 18px; color: #8589ae; font-size: .72rem; font-weight: 700; letter-spacing: .1em; }.live-pill { padding: 7px 11px; border: 1px solid #e63c5e; border-radius: 5px; color: #ff6480; font-size: .68rem; }
+.game-layout { display: grid; grid-template-columns: minmax(430px, .85fr) minmax(400px, 1fr); align-items: center; gap: clamp(26px, 6vw, 110px); max-width: 1500px; min-height: calc(100vh - 170px); margin: auto; }
+.scoreboard-shell { width: min(100%, 635px); padding: 24px; border: 1px solid #454b78; border-radius: 10px; background: linear-gradient(145deg, rgba(39, 43, 88, .98), rgba(16, 18, 40, .98)); box-shadow: 0 20px 70px #03030a80; }
+.scoreboard-topline { margin: -24px -24px 20px; padding: 13px 24px; border-radius: 10px 10px 0 0; background: linear-gradient(90deg, #bc1e43, #55234b 60%, #292c6d); color: #fff; font: 600 .8rem 'Barlow Condensed'; letter-spacing: .12em; }.live-dot { display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%; background: #ff5475; box-shadow: 0 0 10px #ff5475; }.topline-divider { display: inline-block; width: 1px; height: 12px; margin: 0 12px; vertical-align: middle; background: #ffffff55; }
+.players-header, .player-row, .scoreboard-footer { display: grid; grid-template-columns: 1fr 80px 120px; align-items: center; }.players-header { padding: 0 14px 10px; color: #858ab8; font-size: .65rem; font-weight: 700; letter-spacing: .16em; }.players-header span:nth-child(n+2) { text-align: center; }
+.player-row { width: 100%; padding: 14px; border: 0; border-top: 1px solid #ffffff24; background: transparent; color: #fff; text-align: left; cursor: pointer; transition: background .2s; }.player-row:hover, .player-row.is-active { background: linear-gradient(90deg, #ffffff10, transparent); }.player-row.is-active { box-shadow: inset 3px 0 #f04465; }.player-row strong, .player-row>b { text-align: center; font: 800 2rem 'Barlow Condensed'; }.player-row>b { color: #f7bd58; font-size: 2.3rem; }.player-name { display: flex; align-items: center; gap: 10px; font: 800 1.55rem 'Barlow Condensed'; letter-spacing: .04em; }.player-name i { width: 7px; height: 7px; border-radius: 50%; background: #f04465; box-shadow: 0 0 10px #f04465; }.player-name em { margin-left: auto; font-style: normal; font-size: 1.2rem; }
+.scoreboard-footer { grid-template-columns: 1fr auto; margin: 10px -24px -24px; padding: 16px 24px; border-top: 1px solid #ffffff20; background: #12152e; color: #a4a8d0; font: 600 .7rem 'Barlow Condensed'; letter-spacing: .12em; }.sets { display: flex; align-items: center; gap: 10px; color: #777da8; }.sets b { color: #fff; font-size: 1.4rem; }.sets i { width: 1px; height: 22px; background: #ffffff30; }
+.checkout-panel { margin-top: 24px; padding-top: 18px; border-top: 1px solid #ffffff1c; }.checkout-heading, .checkout-row { display: flex; align-items: center; justify-content: space-between; }.checkout-heading span, .checkout-row span { color: #858ab8; font-size: .68rem; font-weight: 700; letter-spacing: .14em; }.checkout-heading small { color: #f04465; font-size: .65rem; font-weight: 700; letter-spacing: .08em; }.quick-score-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin: 12px 0 16px; }.quick-score-grid button, .checkout-row button { padding: 9px 4px; border: 1px solid #4c5389; border-radius: 4px; background: #292e62; color: #fff; cursor: pointer; }.quick-score-grid button:hover { background: #f04465; border-color: #f04465; }.checkout-row { padding-top: 14px; border-top: 1px solid #ffffff1b; }.checkout-row b { margin-left: auto; margin-right: 18px; color: #f7bd58; font: 800 1.55rem 'Barlow Condensed'; }.checkout-row button { padding: 8px 15px; background: #e33a5d; border-color: #e33a5d; font-size: .7rem; font-weight: 700; letter-spacing: .08em; }
+.board-stage { position: relative; display: grid; place-items: center; min-height: 600px; }.board-shadow { position: absolute; width: min(42vw, 580px); aspect-ratio: 1; border-radius: 50%; background: #02030a; filter: blur(30px); opacity: .7; transform: translate(15px, 18px); }.dartboard { position: relative; width: min(42vw, 540px); aspect-ratio: 1; padding: 33px; border: 12px solid #171a2e; border-radius: 50%; background: #303452; box-shadow: inset 0 0 0 2px #5d638b, 0 0 0 3px #0b0c16, 0 24px 80px #000b; }.board-face { position: relative; width: 100%; height: 100%; overflow: hidden; border: 8px solid #111322; border-radius: 50%; background: conic-gradient(from -9deg, #e9e9df 0 9%, #252938 9% 18%, #e9e9df 18% 27%, #252938 27% 36%, #e9e9df 36% 45%, #252938 45% 54%, #e9e9df 54% 63%, #252938 63% 72%, #e9e9df 72% 81%, #252938 81% 90%, #e9e9df 90% 99%, #252938 99%); }.board-face::before, .board-face::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from -9deg, #bb2544 0 4.5%, transparent 4.5% 9%, #bb2544 9% 13.5%, transparent 13.5% 18%, #bb2544 18% 22.5%, transparent 22.5% 27%, #bb2544 27% 31.5%, transparent 31.5% 36%, #bb2544 36% 40.5%, transparent 40.5% 45%, #bb2544 45% 49.5%, transparent 49.5% 54%, #bb2544 54% 58.5%, transparent 58.5% 63%, #bb2544 63% 67.5%, transparent 67.5% 72%, #bb2544 72% 76.5%, transparent 76.5% 81%, #bb2544 81% 85.5%, transparent 85.5% 90%, #bb2544 90% 94.5%, transparent 94.5% 99%, #bb2544 99%); mask: radial-gradient(circle, transparent 0 39%, #000 40% 48%, transparent 49% 58%, #000 59% 64%, transparent 65%); }.board-face::after { background: #15947b; inset: 42%; opacity: .9; }
+.double-ring, .triple-ring, .bull-outer, .bull-inner { position: absolute; z-index: 3; border-radius: 50%; border: 5px solid #deded1; pointer-events: none; }.double-ring { inset: 5%; }.triple-ring { inset: 38%; }.bull-outer { inset: 43%; }.bull-inner { inset: 47%; border: 0; background: #d62948; }.wire { position: absolute; z-index: 4; background: #dadacd; box-shadow: 0 0 2px #000; }.wire-vertical { top: 0; bottom: 0; left: 50%; width: 2px; }.wire-horizontal { left: 0; right: 0; top: 50%; height: 2px; }.spoke { position: absolute; z-index: 4; top: 0; left: calc(50% - 1px); width: 2px; height: 100%; background: #dadacd; transform-origin: center; box-shadow: 0 0 2px #000; }.board-number-ring { position: absolute; inset: -28px; z-index: 5; border-radius: 50%; color: #eeeeea; font: 800 clamp(1rem, 2.2vw, 1.55rem) 'Barlow Condensed'; }.board-number-ring span { position: absolute; inset: 0; display: flex; justify-content: center; transform-origin: center; }.board-number-ring b { position: absolute; top: 0; font-weight: 800; }.board-caption { position: absolute; bottom: 8%; z-index: 8; display: flex; flex-direction: column; align-items: center; color: #f0eee1; font: 800 .9rem 'Barlow Condensed'; letter-spacing: .14em; text-shadow: 0 1px 3px #000; }.board-caption small { color: #dfcba8; font-size: .42rem; letter-spacing: .22em; }
+.app-footer { color: #555a85; font-size: .62rem; font-weight: 700; letter-spacing: .16em; }.app-footer i { display: inline-block; width: 5px; height: 5px; margin: 0 9px; border-radius: 50%; background: #f04465; }
+@media (max-width: 900px) { .game-layout { grid-template-columns: 1fr; gap: 8px; padding: 34px 0; }.scoreboard-shell { margin: auto; order: 2; }.board-stage { min-height: 470px; order: 1; }.dartboard { width: min(76vw, 500px); }.board-shadow { width: min(76vw, 500px); }.app-footer { margin-top: 10px; } }
+@media (max-width: 560px) { .app-shell { padding: 18px 12px; }.app-header { align-items: flex-start; }.match-meta { flex-direction: column; gap: 6px; font-size: .55rem; }.event-kicker { font-size: .5rem; }.app-header h1 { font-size: 1.65rem; }.scoreboard-shell { padding: 16px; }.scoreboard-topline { margin: -16px -16px 14px; padding: 11px 16px; }.players-header, .player-row { grid-template-columns: 1fr 52px 84px; }.player-name { font-size: 1.15rem; }.player-row strong, .player-row>b { font-size: 1.55rem; }.scoreboard-footer { margin: 10px -16px -16px; padding: 13px 16px; font-size: .55rem; }.sets { gap: 5px; }.quick-score-grid { grid-template-columns: repeat(3, 1fr); } }
